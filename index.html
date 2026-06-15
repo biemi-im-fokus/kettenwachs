@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Kettenwachs">
+<meta name="theme-color" content="#f4f4f6" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0d0d10" media="(prefers-color-scheme: dark)">
+<link rel="apple-touch-icon" href="kettenwachs-icon.png">
+<link rel="icon" type="image/png" href="kettenwachs-icon.png">
+<title>Kettenwachs</title>
+<style>
+  :root {
+    --bg: #f4f4f6;
+    --surface: #ffffff;
+    --surface-2: #f7f7f9;
+    --border: #e4e4e9;
+    --text: #1a1a1f;
+    --muted: #71717a;
+    --faint: #a1a1aa;
+    --accent: #6d56e0;
+    --accent-soft: #efecfc;
+    --green: #16a34a;
+    --green-soft: #e7f6ec;
+    --amber: #d97706;
+    --amber-soft: #fbeed9;
+    --red: #dc2626;
+    --red-soft: #fbe7e7;
+    --hot: #ea580c;
+    --hot-soft: #fdeadd;
+    --drip: #0284c7;
+    --drip-soft: #e0f2fe;
+    --radius: 16px;
+    --radius-sm: 10px;
+    --shadow: 0 1px 2px rgba(0,0,0,.04), 0 4px 16px rgba(0,0,0,.04);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0d0d10;
+      --surface: #18181c;
+      --surface-2: #202026;
+      --border: #2c2c33;
+      --text: #ececf0;
+      --muted: #8e8e98;
+      --faint: #5e5e68;
+      --accent: #8b78f0;
+      --accent-soft: #221d3d;
+      --green: #34d27a;
+      --green-soft: #14301f;
+      --amber: #f0a83a;
+      --amber-soft: #332512;
+      --red: #f06262;
+      --red-soft: #331818;
+      --hot: #fb8a3c;
+      --hot-soft: #38220f;
+      --drip: #38bdf8;
+      --drip-soft: #0c2a3a;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 4px 16px rgba(0,0,0,.25);
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro", system-ui, sans-serif;
+    background: var(--bg); color: var(--text);
+    max-width: 540px; margin: 0 auto;
+    padding: calc(20px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right)) calc(64px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left));
+    -webkit-font-smoothing: antialiased;
+  }
+  header { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+  header .mark { font-size: 1.5rem; }
+  header h1 { font-size: 1.25rem; font-weight: 700; letter-spacing: -.02em; flex: 1; }
+  .icon-btn {
+    width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--border);
+    background: var(--surface); color: var(--muted); font-size: 1.05rem; cursor: pointer;
+    display: grid; place-items: center;
+  }
+  .icon-btn:active { transform: scale(.94); }
+
+  .banner {
+    display: none; align-items: center; gap: 10px; padding: 12px 14px; border-radius: var(--radius-sm);
+    margin-bottom: 16px; font-size: .85rem; font-weight: 600; line-height: 1.35;
+  }
+  .banner.show { display: flex; }
+  .banner.due { background: var(--red-soft); color: var(--red); }
+  .banner.soon { background: var(--amber-soft); color: var(--amber); }
+  .banner .b-ico { font-size: 1.1rem; }
+
+  .chains { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+  .chain {
+    position: relative; background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 16px 13px 13px; box-shadow: var(--shadow);
+    display: flex; flex-direction: column; align-items: center; text-align: center;
+  }
+  .chain.mounted { border-color: var(--accent); }
+  .chain-top { display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 10px; width: 100%; }
+  .chain-name {
+    font-size: .92rem; font-weight: 700; letter-spacing: -.01em; cursor: pointer;
+    border-bottom: 1px dashed transparent; padding-bottom: 1px;
+  }
+  .chain-name:hover { border-bottom-color: var(--faint); }
+  .mounted-badge {
+    font-size: .58rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em;
+    background: var(--accent-soft); color: var(--accent); padding: 2px 6px; border-radius: 99px;
+  }
+  .gauge { position: relative; width: 110px; height: 110px; }
+  .gauge svg { transform: rotate(-90deg); }
+  .gauge-center {
+    position: absolute; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 0;
+  }
+  .gauge-km { font-size: 1.6rem; font-weight: 800; letter-spacing: -.03em; line-height: 1.05; }
+  .gauge-unit { font-size: .6rem; color: var(--muted); font-weight: 600; }
+  .gauge-cap { margin-top: 6px; font-size: .64rem; font-weight: 700; color: var(--drip); }
+  .status-pill {
+    margin-top: 8px; font-size: .7rem; font-weight: 700; padding: 4px 10px; border-radius: 99px;
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  .status-pill.ok { background: var(--green-soft); color: var(--green); }
+  .status-pill.soon { background: var(--amber-soft); color: var(--amber); }
+  .status-pill.due { background: var(--red-soft); color: var(--red); }
+
+  .hot-row { width: 100%; margin-top: 12px; }
+  .hot-label { display: flex; justify-content: space-between; align-items: baseline; font-size: .64rem; color: var(--muted); font-weight: 600; margin-bottom: 4px; }
+  .hot-label .ht { color: var(--hot); font-weight: 700; }
+  .hot-label b { color: var(--text); font-weight: 700; }
+  .hbar { width: 100%; height: 6px; border-radius: 99px; background: var(--border); overflow: hidden; }
+  .hbar-fill { height: 100%; border-radius: 99px; transition: width .4s; }
+
+  .chain-meta { margin-top: 11px; font-size: .66rem; color: var(--muted); line-height: 1.55; }
+  .chain-meta b { color: var(--text); font-weight: 600; }
+
+  .chain-actions { display: flex; flex-direction: column; gap: 6px; width: 100%; margin-top: 12px; }
+  .chain-actions .arow { display: flex; gap: 6px; }
+  .chain-actions button {
+    flex: 1; border: 1px solid var(--border); background: var(--surface-2); color: var(--text);
+    font-size: .72rem; font-weight: 700; padding: 9px 4px; border-radius: 8px; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center; gap: 3px; font-family: inherit;
+  }
+  .chain-actions button:active { transform: scale(.96); }
+  .wax-hot { background: var(--hot-soft); color: var(--hot); border-color: transparent; }
+  .wax-drip { background: var(--drip-soft); color: var(--drip); border-color: transparent; }
+  .mount-btn.active { opacity: .5; cursor: default; }
+
+  .strip { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 18px; }
+  .stat {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 14px;
+  }
+  .stat .label { font-size: .66rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+  .stat .value { font-size: 1.25rem; font-weight: 800; letter-spacing: -.02em; margin-top: 2px; }
+  .stat .value small { font-size: .7rem; font-weight: 600; color: var(--muted); }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 16px; margin-bottom: 16px; box-shadow: var(--shadow);
+  }
+  .card h2 { font-size: .76rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 12px; }
+  .add-row { display: flex; gap: 8px; }
+  .add-row .km-in { flex: 1; }
+  input, select {
+    width: 100%; background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px;
+    color: var(--text); padding: 11px 12px; font-size: .95rem; font-family: inherit;
+  }
+  input:focus, select:focus { outline: none; border-color: var(--accent); }
+  input::placeholder { color: var(--faint); }
+  .field { margin-bottom: 10px; }
+  .field label { display: block; font-size: .72rem; color: var(--muted); font-weight: 600; margin-bottom: 5px; }
+  .btn {
+    border: none; border-radius: 11px; padding: 12px; font-size: .9rem; font-weight: 700;
+    cursor: pointer; font-family: inherit; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .btn:active { transform: scale(.98); }
+  .btn-accent { background: var(--accent); color: #fff; }
+  .add-target { font-size: .72rem; color: var(--muted); margin-top: 10px; text-align: center; }
+  .add-target b { color: var(--accent); font-weight: 700; }
+
+  .hist-list { list-style: none; }
+  .hist-item { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid var(--border); font-size: .82rem; }
+  .month { border-top: 1px solid var(--border); }
+  .month:first-child { border-top: none; }
+  .month > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 8px; padding: 12px 0 11px; font-size: .85rem; font-weight: 700; }
+  .month > summary::-webkit-details-marker { display: none; }
+  .month .chev { color: var(--faint); font-size: .7rem; transition: transform .2s; }
+  .month[open] .chev { transform: rotate(90deg); }
+  .month .mlabel { letter-spacing: -.01em; }
+  .month .msum { margin-left: auto; font-size: .68rem; color: var(--muted); font-weight: 600; }
+  .month-items { margin: 0; }
+  .hist-ico { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; font-size: .9rem; flex-shrink: 0; }
+  .hist-ico.ride { background: var(--accent-soft); }
+  .hist-ico.hot { background: var(--hot-soft); }
+  .hist-ico.drip { background: var(--drip-soft); }
+  .hist-ico.swap { background: var(--surface-2); }
+  .hist-main { flex: 1; min-width: 0; }
+  .hist-title { font-weight: 600; }
+  .hist-sub { font-size: .7rem; color: var(--muted); margin-top: 1px; }
+  .hist-note { font-size: .72rem; color: var(--muted); margin-top: 3px; font-style: italic; word-break: break-word; }
+  .hist-main.clickable { cursor: pointer; }
+  .hist-actions { display: flex; align-items: center; gap: 1px; flex-shrink: 0; }
+  .hist-edit { background: none; border: none; color: var(--faint); cursor: pointer; font-size: .9rem; padding: 4px; }
+  .hist-edit:hover { color: var(--accent); }
+  .hist-del { background: none; border: none; color: var(--faint); cursor: pointer; font-size: .95rem; padding: 4px; flex-shrink: 0; }
+  .hist-del:hover { color: var(--red); }
+  .empty { text-align: center; color: var(--faint); font-size: .82rem; padding: 18px 0; line-height: 1.6; }
+
+  .sheet-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 40; align-items: flex-end; justify-content: center; }
+  .sheet-bg.show { display: flex; }
+  .sheet { background: var(--surface); width: 100%; max-width: 540px; border-radius: 20px 20px 0 0; padding: 20px 18px calc(28px + env(safe-area-inset-bottom)); max-height: 88vh; overflow-y: auto; }
+  .sheet h2 { font-size: 1.05rem; font-weight: 700; margin-bottom: 16px; }
+  .sheet .hint { font-size: .72rem; color: var(--muted); line-height: 1.5; margin: -2px 0 4px; }
+  .sheet hr { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+  .btn-ghost { width: 100%; border: 1px solid var(--border); background: var(--surface-2); color: var(--red); border-radius: 11px; padding: 11px; font-size: .85rem; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .sheet-close { width: 100%; margin-top: 14px; background: var(--accent); color: #fff; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .help h3 { font-size: .92rem; font-weight: 700; margin: 18px 0 6px; display: flex; align-items: center; gap: 6px; }
+  .help h3:first-of-type { margin-top: 4px; }
+  .help p { font-size: .8rem; color: var(--muted); line-height: 1.55; margin-bottom: 6px; }
+  .help b { color: var(--text); font-weight: 600; }
+  .help ul { margin: 4px 0 8px; padding-left: 18px; }
+  .help li { font-size: .8rem; color: var(--muted); line-height: 1.5; margin-bottom: 5px; }
+  .help li b { color: var(--text); font-weight: 600; }
+  .help .tip { background: var(--accent-soft); color: var(--accent); border-radius: 10px; padding: 10px 12px; font-size: .78rem; line-height: 1.5; font-weight: 600; }
+  .ico-lead { font-size: .85rem; }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="mark">🚴</span>
+  <h1>Kettenwachs</h1>
+  <button class="icon-btn" onclick="openHelp()" aria-label="Anleitung">?</button>
+  <button class="icon-btn" onclick="openSettings()" aria-label="Einstellungen">⚙︎</button>
+</header>
+
+<div class="banner" id="banner"></div>
+
+<div class="chains" id="chains"></div>
+
+<div class="strip" id="strip"></div>
+
+<div class="card">
+  <h2>Fahrt eintragen</h2>
+  <div class="field">
+    <label>Datum</label>
+    <input type="date" id="rideDate">
+  </div>
+  <div class="add-row">
+    <input class="km-in" type="number" inputmode="decimal" id="rideKm" placeholder="Kilometer" min="0" step="0.1">
+    <button class="btn btn-accent" style="padding:12px 20px" onclick="addRide()">＋</button>
+  </div>
+  <input type="text" id="rideNote" placeholder="Notiz (optional) – z.B. Regenfahrt, neue Kassette …" style="margin-top:8px">
+  <div class="add-target" id="addTarget"></div>
+</div>
+
+<div class="card">
+  <h2 style="margin:0">Verlauf</h2>
+  <div id="histList" style="margin-top:12px"></div>
+</div>
+
+<div class="sheet-bg" id="waxBg" onclick="if(event.target===this)closeWax()">
+  <div class="sheet">
+    <h2 id="waxTitle">Wachsen eintragen</h2>
+    <div class="field">
+      <label>Datum</label>
+      <input type="date" id="waxDateInput">
+    </div>
+    <div class="field">
+      <label>Notiz (optional)</label>
+      <input type="text" id="waxNote" placeholder="z.B. Kette vorher entfettet">
+    </div>
+    <button class="btn sheet-close" id="waxConfirm" onclick="confirmWax()">Eintragen</button>
+  </div>
+</div>
+
+<div class="sheet-bg" id="editBg" onclick="if(event.target===this)closeEdit()">
+  <div class="sheet">
+    <h2 id="editTitle">Eintrag bearbeiten</h2>
+    <div class="field"><label>Datum</label><input type="date" id="editDate"></div>
+    <div class="field" id="editKmField"><label>Kilometer</label><input type="number" inputmode="decimal" id="editKm" min="0" step="0.1"></div>
+    <div class="field" id="editTypeField"><label>Wachs-Art</label><select id="editWaxType"><option value="hot">🔥 Heißwachs</option><option value="drip">💧 Flüssigwachs</option></select></div>
+    <div class="field" id="editChainField"><label>Kette</label><select id="editChain"><option value="A">A</option><option value="B">B</option></select></div>
+    <div class="field"><label>Notiz (optional)</label><input type="text" id="editNote" placeholder="z.B. Regenfahrt, neue Kassette …"></div>
+    <div class="two-col">
+      <button class="btn-ghost" onclick="deleteFromEdit()">Löschen</button>
+      <button class="btn" style="background:var(--accent);color:#fff" onclick="saveEdit()">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<div class="sheet-bg" id="helpBg" onclick="if(event.target===this)closeHelp()">
+  <div class="sheet help">
+    <h2>📖 Anleitung</h2>
+
+    <div class="tip">Grundidee: Du hast zwei Ketten, aber immer nur <b>eine ist montiert</b>. Gefahrene Kilometer zählen automatisch auf die montierte Kette. Wachsen setzt deren Zähler zurück.</div>
+
+    <h3>🚴 Fahrt eintragen</h3>
+    <p>Datum (Standard heute), Kilometer und optional eine Notiz eingeben, dann <b>＋</b>. Die km werden der <b>aktuell montierten</b> Kette gutgeschrieben — darunter steht, welche das ist. Enter im km-Feld speichert ebenfalls.</p>
+
+    <h3>🔗 Die zwei Ketten-Karten</h3>
+    <ul>
+      <li><b>Großer Ring</b> = km seit der letzten <b>Auffrischung</b> (💧) gegen das Flüssigwachs-Intervall.</li>
+      <li><b>Balken darunter</b> = 🔥 <b>Heißwachs-Basis</b>: km seit dem letzten Heißwachs gegen das lange Intervall.</li>
+      <li><b>Farben:</b> grün = alles gut, gelb = bald fällig (ab 80 %), rot = überfällig.</li>
+      <li><b>Status-Pille</b> zeigt die dringendere der beiden Aktionen an.</li>
+      <li><b>Gesamt</b> = Laufleistung der Kette (inkl. Start-km), darunter die Daten des letzten 🔥 und 💧.</li>
+    </ul>
+
+    <h3>🔥 Heißwachs &amp; 💧 Flüssigwachs</h3>
+    <ul>
+      <li><b>🔥 Heißwachs</b> = die Basis (langes Intervall). Setzt <b>beide</b> Zähler zurück.</li>
+      <li><b>💧 Flüssig</b> = schnelles Nachbessern (kurzes Intervall). Setzt <b>nur</b> den Auffrisch-Zähler zurück — die Basis altert weiter.</li>
+      <li>Beim Tippen öffnet sich ein <b>Datums-Picker</b> plus optionales Notizfeld.</li>
+    </ul>
+
+    <h3>🔄 Kette montieren / wechseln</h3>
+    <p>Tippst du bei der nicht-montierten Kette auf <b>„↑ Diese Kette montieren"</b>, zählen ab diesem Tag die Fahrten auf diese Kette. So bildest du den realen Ketten-Tausch am Rad ab. Die montierte Kette trägt das Abzeichen <b>„montiert"</b>.</p>
+
+    <h3>🔔 Erinnerung</h3>
+    <p>Oben erscheint ein Banner, sobald die montierte Kette fällig wird — gelb („bald") oder rot („fällig"), mit Hinweis ob 🔥 oder 💧 dran ist. (Echte Push-Nachrichten sind in einer Browser-Datei nicht möglich — die Erinnerung ist sichtbar, sobald du das Tool öffnest.)</p>
+
+    <h3>📜 Verlauf</h3>
+    <ul>
+      <li>Nach <b>Monaten gruppiert</b> und einklappbar; neuester Monat offen. Rechts pro Monat eine Mini-Bilanz (Fahrten · km).</li>
+      <li><b>Zeile antippen</b> oder <b>✎</b> öffnet die Bearbeitung: Datum, km / Wachs-Art / Kette und Notiz ändern.</li>
+      <li><b>✕</b> löscht einen Eintrag (mit Rückfrage). Löschen geht auch im Bearbeiten-Fenster.</li>
+    </ul>
+
+    <h3>⚙︎ Einstellungen</h3>
+    <ul>
+      <li><b>Intervalle</b> für Heißwachs &amp; Flüssigwachs (km bis zur Erinnerung).</li>
+      <li><b>Namen</b> der beiden Ketten (auch per Klick auf den Namen änderbar).</li>
+      <li><b>Start-km</b> = Laufleistung, die eine Kette schon vor dem Tool hatte (zählt nur zur Gesamt-Laufleistung).</li>
+    </ul>
+
+    <h3>💾 Daten &amp; Backup</h3>
+    <p>Alle Daten liegen lokal im Browser (<b>localStorage</b>) — offline-fähig und schnell, aber an diesen Browser gebunden. Über <b>Export (JSON)</b> sicherst du alles als Datei (Backup oder zum Weitergeben), mit <b>Import</b> lädst du sie wieder ein.</p>
+
+    <button class="btn sheet-close" onclick="closeHelp()">Verstanden</button>
+  </div>
+</div>
+
+<div class="sheet-bg" id="sheetBg" onclick="if(event.target===this)closeSettings()">
+  <div class="sheet">
+    <h2>Einstellungen</h2>
+    <div class="two-col">
+      <div class="field"><label>🔥 Heißwachs-Intervall (km)</label><input type="number" id="setHot" min="50" step="10"></div>
+      <div class="field"><label>💧 Flüssigwachs-Intervall (km)</label><input type="number" id="setTop" min="20" step="10"></div>
+    </div>
+    <p class="hint">Heißwachs = Basis mit langem Intervall. Flüssigwachs = schnelles Nachbessern dazwischen mit kürzerem Intervall. Ein Heißwachs setzt beide Zähler zurück, ein Flüssigwachs nur den Nachwachs-Zähler.</p>
+    <hr>
+    <div class="two-col">
+      <div class="field"><label>Name Kette A</label><input type="text" id="setNameA"></div>
+      <div class="field"><label>Name Kette B</label><input type="text" id="setNameB"></div>
+    </div>
+    <div class="two-col">
+      <div class="field"><label>Start-km Kette A</label><input type="number" id="setStartA" min="0" step="1"></div>
+      <div class="field"><label>Start-km Kette B</label><input type="number" id="setStartB" min="0" step="1"></div>
+    </div>
+    <p class="hint">Start-km = Laufleistung, die eine Kette schon hatte, bevor du das Tool nutzt. Zählt nur zur Gesamt-Laufleistung.</p>
+    <hr>
+    <label style="display:block;font-size:.72rem;color:var(--muted);font-weight:600;margin-bottom:6px">Daten sichern &amp; übertragen</label>
+    <div class="two-col">
+      <button class="btn-ghost" style="color:var(--accent)" onclick="exportData()">⬇ Export (JSON)</button>
+      <button class="btn-ghost" style="color:var(--accent)" onclick="document.getElementById('importFile').click()">⬆ Import (JSON)</button>
+    </div>
+    <input type="file" id="importFile" accept="application/json,.json" hidden onchange="importData(this.files[0])">
+    <p class="hint">Export lädt eine JSON-Datei mit allen Fahrten &amp; Einstellungen herunter — als Backup oder zum Weitergeben. Import liest so eine Datei wieder ein und ersetzt die aktuellen Daten.</p>
+    <hr>
+    <button class="btn-ghost" onclick="resetAll()">Alle Daten löschen</button>
+    <button class="btn sheet-close" onclick="saveSettings()">Fertig</button>
+  </div>
+</div>
+
+<script>
+/* ---------- Datenmodell: der Verlauf (log) ist die Wahrheit ----------
+   Events:
+   - ride: { date, km }                    -> km auf die MONTIERTE Kette
+   - swap: { date, chain }                 -> ab hier ist diese Kette montiert
+   - wax:  { date, chain, waxType:'hot'|'drip' }
+        hot  -> setzt km-seit-Heißwachs UND km-seit-Auffrischung auf 0
+        drip -> setzt nur km-seit-Auffrischung auf 0 (Basis altert weiter)
+*/
+const DEFAULT = {
+  settings: { hotInterval: 400, topInterval: 150, nameA: 'Kette A', nameB: 'Kette B', startA: 0, startB: 0 },
+  log: []
+};
+let data = load();
+
+function load() {
+  try {
+    const d = JSON.parse(localStorage.getItem('kettenwachs_v2'));
+    if (d && Array.isArray(d.log)) return migrate(d);
+  } catch(e) {}
+  return structuredClone(DEFAULT);
+}
+function migrate(d) {
+  d.settings = Object.assign({}, DEFAULT.settings, d.settings || {});
+  if (d.settings.interval) { d.settings.hotInterval = d.settings.interval; delete d.settings.interval; }
+  d.log = (d.log || []).map(e => {
+    if (e.type === 'wax' && !e.waxType) e.waxType = 'hot'; // Alt-Einträge = Heißwachs
+    return e;
+  });
+  return d;
+}
+function save() { localStorage.setItem('kettenwachs_v2', JSON.stringify(data)); }
+function today() { return new Date().toISOString().slice(0,10); }
+/* Streng monoton steigende ID – kollisionssicher auch bei mehreren Einträgen pro Millisekunde */
+let _idSeq = 0;
+function newId() { return Date.now() + (_idSeq++); }
+function ordered() { return [...data.log].sort((a,b) => a.date.localeCompare(b.date) || a.id - b.id); }
+
+/* Replay über den Verlauf */
+function compute() {
+  const blank = () => ({ sinceHot:0, sinceTop:0, ridden:0, lastHot:null, lastTop:null });
+  const s = { A: blank(), B: blank() };
+  let mounted = 'A';
+  for (const e of ordered()) {
+    if (e.type === 'swap') mounted = e.chain;
+    else if (e.type === 'wax') {
+      const c = s[e.chain];
+      if (e.waxType === 'hot') { c.sinceHot = 0; c.sinceTop = 0; c.lastHot = e.date; c.lastTop = e.date; }
+      else { c.sinceTop = 0; c.lastTop = e.date; }
+    } else if (e.type === 'ride') {
+      const c = s[mounted]; c.sinceHot += e.km; c.sinceTop += e.km; c.ridden += e.km;
+    }
+  }
+  s.A.total = s.A.ridden + (+data.settings.startA || 0);
+  s.B.total = s.B.ridden + (+data.settings.startB || 0);
+  return { s, mounted };
+}
+
+function fmtDate(d) { if (!d) return '–'; const [y,m,day] = d.split('-'); return `${day}.${m}.${y.slice(2)}`; }
+function fmtKm(n) { return Math.round(n).toLocaleString('de-DE'); }
+function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+function lvl(v, iv) { const p = v / iv; return p >= 1 ? 'due' : p >= 0.8 ? 'soon' : 'ok'; }
+function lvlColor(l) { return l === 'due' ? 'var(--red)' : l === 'soon' ? 'var(--amber)' : 'var(--green)'; }
+
+/* Kombinierter Status pro Kette (Priorität: Heißwachs fällig > Nachwachsen fällig > bald ...) */
+function chainStatus(st) {
+  const hot = lvl(st.sinceHot, data.settings.hotInterval);
+  const top = lvl(st.sinceTop, data.settings.topInterval);
+  let key, text;
+  if (hot === 'due')       { key = 'due';  text = '🔥 Heißwachs fällig'; }
+  else if (top === 'due')  { key = 'due';  text = '💧 Nachwachsen fällig'; }
+  else if (hot === 'soon') { key = 'soon'; text = 'Bald Heißwachs'; }
+  else if (top === 'soon') { key = 'soon'; text = 'Bald nachwachsen'; }
+  else                     { key = 'ok';   text = 'Alles gut'; }
+  return { key, text, hot, top };
+}
+
+/* ---------- Aktionen ---------- */
+function addRide() {
+  const date = document.getElementById('rideDate').value;
+  const km = parseFloat(document.getElementById('rideKm').value);
+  if (!date || !(km > 0)) { document.getElementById('rideKm').focus(); return; }
+  const note = document.getElementById('rideNote').value.trim();
+  const entry = { id: newId(), type: 'ride', date, km };
+  if (note) entry.note = note;
+  data.log.push(entry);
+  document.getElementById('rideKm').value = '';
+  document.getElementById('rideNote').value = '';
+  save(); render();
+}
+let waxCtx = null;
+function openWax(chain, waxType) {
+  waxCtx = { chain, waxType };
+  const nm = chain === 'A' ? data.settings.nameA : data.settings.nameB;
+  const label = waxType === 'hot' ? '🔥 Heißwachs' : '💧 Flüssigwachs';
+  document.getElementById('waxTitle').textContent = `${label} – ${nm}`;
+  document.getElementById('waxDateInput').value = today();
+  document.getElementById('waxNote').value = '';
+  document.getElementById('waxConfirm').style.background = waxType === 'hot' ? 'var(--hot)' : 'var(--drip)';
+  document.getElementById('waxBg').classList.add('show');
+}
+function closeWax() { document.getElementById('waxBg').classList.remove('show'); waxCtx = null; }
+function confirmWax() {
+  if (!waxCtx) return;
+  const date = document.getElementById('waxDateInput').value;
+  if (!date) { document.getElementById('waxDateInput').focus(); return; }
+  const note = document.getElementById('waxNote').value.trim();
+  const entry = { id: newId(), type: 'wax', date, chain: waxCtx.chain, waxType: waxCtx.waxType };
+  if (note) entry.note = note;
+  data.log.push(entry);
+  save(); closeWax(); render();
+}
+function mountChain(chain) {
+  data.log.push({ id: newId(), type: 'swap', date: today(), chain });
+  save(); render();
+}
+function deleteEvent(id) { data.log = data.log.filter(e => e.id !== id); save(); render(); }
+
+/* ---------- Eintrag bearbeiten ---------- */
+let editId = null;
+function showField(id, show) { document.getElementById(id).style.display = show ? '' : 'none'; }
+function openEdit(id) {
+  const e = data.log.find(x => x.id === id);
+  if (!e) return;
+  editId = id;
+  const cfg = data.settings;
+  const typeLabel = e.type === 'ride' ? '🚴 Fahrt'
+    : e.type === 'wax' ? (e.waxType === 'hot' ? '🔥 Heißwachs' : '💧 Flüssigwachs')
+    : '🔄 Kettenwechsel';
+  document.getElementById('editTitle').textContent = typeLabel + ' bearbeiten';
+  document.getElementById('editDate').value = e.date;
+  showField('editKmField', e.type === 'ride');
+  if (e.type === 'ride') document.getElementById('editKm').value = e.km;
+  showField('editTypeField', e.type === 'wax');
+  if (e.type === 'wax') document.getElementById('editWaxType').value = e.waxType;
+  const hasChain = e.type === 'wax' || e.type === 'swap';
+  showField('editChainField', hasChain);
+  const sel = document.getElementById('editChain');
+  sel.options[0].text = cfg.nameA; sel.options[1].text = cfg.nameB;
+  if (hasChain) sel.value = e.chain;
+  document.getElementById('editNote').value = e.note || '';
+  document.getElementById('editBg').classList.add('show');
+}
+function closeEdit() { document.getElementById('editBg').classList.remove('show'); editId = null; }
+function saveEdit() {
+  const e = data.log.find(x => x.id === editId);
+  if (!e) return;
+  const date = document.getElementById('editDate').value;
+  if (!date) { document.getElementById('editDate').focus(); return; }
+  if (e.type === 'ride') {
+    const km = parseFloat(document.getElementById('editKm').value);
+    if (!(km > 0)) { document.getElementById('editKm').focus(); return; }
+    e.km = km;
+  }
+  e.date = date;
+  if (e.type === 'wax') e.waxType = document.getElementById('editWaxType').value;
+  if (e.type === 'wax' || e.type === 'swap') e.chain = document.getElementById('editChain').value;
+  const note = document.getElementById('editNote').value.trim();
+  if (note) e.note = note; else delete e.note;
+  save(); closeEdit(); render();
+}
+function deleteFromEdit() {
+  if (confirm('Eintrag wirklich löschen?')) { data.log = data.log.filter(x => x.id !== editId); save(); closeEdit(); render(); }
+}
+function renameChain(which) {
+  const cur = which === 'A' ? data.settings.nameA : data.settings.nameB;
+  const v = prompt('Name der Kette:', cur);
+  if (v && v.trim()) { if (which === 'A') data.settings.nameA = v.trim(); else data.settings.nameB = v.trim(); save(); render(); }
+}
+function resetAll() {
+  if (confirm('Wirklich alle Fahrten und Wachs-Einträge löschen? Einstellungen bleiben.')) { data.log = []; save(); render(); closeSettings(); }
+}
+
+/* ---------- Anleitung ---------- */
+function openHelp() { document.getElementById('helpBg').classList.add('show'); }
+function closeHelp() { document.getElementById('helpBg').classList.remove('show'); }
+
+/* ---------- Settings ---------- */
+function openSettings() {
+  const s = data.settings;
+  setVal('setHot', s.hotInterval); setVal('setTop', s.topInterval);
+  setVal('setNameA', s.nameA); setVal('setNameB', s.nameB);
+  setVal('setStartA', s.startA); setVal('setStartB', s.startB);
+  document.getElementById('sheetBg').classList.add('show');
+}
+function closeSettings() { document.getElementById('sheetBg').classList.remove('show'); }
+function saveSettings() {
+  const s = data.settings;
+  s.hotInterval = Math.max(50, parseInt(val('setHot')) || 400);
+  s.topInterval = Math.max(20, parseInt(val('setTop')) || 150);
+  s.nameA = val('setNameA').trim() || 'Kette A';
+  s.nameB = val('setNameB').trim() || 'Kette B';
+  s.startA = Math.max(0, parseInt(val('setStartA')) || 0);
+  s.startB = Math.max(0, parseInt(val('setStartB')) || 0);
+  save(); render(); closeSettings();
+}
+const val = id => document.getElementById(id).value;
+const setVal = (id,v) => document.getElementById(id).value = v;
+
+/* ---------- Export / Import (JSON) ---------- */
+function exportData() {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `kettenwachs-${today()}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+function importData(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const parsed = JSON.parse(reader.result);
+      if (!parsed || !Array.isArray(parsed.log)) throw new Error('keine gültige Kettenwachs-Datei');
+      const rides = parsed.log.filter(e => e.type === 'ride').length;
+      if (!confirm(`Backup mit ${parsed.log.length} Einträgen (${rides} Fahrten) importieren?\n\nDeine aktuellen Daten werden dabei ersetzt.`)) return;
+      data = migrate(parsed);
+      save(); render(); closeSettings();
+      alert('Import erfolgreich.');
+    } catch (err) {
+      alert('Import fehlgeschlagen: ' + err.message);
+    }
+  };
+  reader.onerror = () => alert('Datei konnte nicht gelesen werden.');
+  reader.readAsText(file);
+  document.getElementById('importFile').value = ''; // dieselbe Datei erneut wählbar machen
+}
+
+/* ---------- Rendering ---------- */
+function gaugeSVG(value, interval, color) {
+  const pct = Math.min(value / interval, 1);
+  const r = 48, c = 2 * Math.PI * r, off = c * (1 - pct);
+  return `<svg width="110" height="110" viewBox="0 0 110 110">
+    <circle cx="55" cy="55" r="${r}" fill="none" stroke="var(--border)" stroke-width="9"/>
+    <circle cx="55" cy="55" r="${r}" fill="none" stroke="${color}" stroke-width="9"
+      stroke-linecap="round" stroke-dasharray="${c.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}"/>
+  </svg>`;
+}
+
+function chainCard(which, st, mounted) {
+  const cfg = data.settings;
+  const name = which === 'A' ? cfg.nameA : cfg.nameB;
+  const isMounted = mounted === which;
+  const status = chainStatus(st);
+  const ringColor = lvlColor(status.top);   // Ring = Auffrischung (Flüssig)
+  const hotColor = lvlColor(status.hot);     // Balken = Heißwachs-Basis
+  return `<div class="chain ${isMounted ? 'mounted' : ''}">
+    <div class="chain-top">
+      <span class="chain-name" onclick="renameChain('${which}')">${name}</span>
+      ${isMounted ? '<span class="mounted-badge">montiert</span>' : ''}
+    </div>
+    <div class="gauge">
+      ${gaugeSVG(st.sinceTop, cfg.topInterval, ringColor)}
+      <div class="gauge-center">
+        <div class="gauge-km">${fmtKm(st.sinceTop)}</div>
+        <div class="gauge-unit">/ ${fmtKm(cfg.topInterval)} km</div>
+      </div>
+    </div>
+    <div class="gauge-cap">💧 seit Auffrischung</div>
+    <div class="status-pill ${status.key}">${status.text}</div>
+    <div class="hot-row">
+      <div class="hot-label"><span class="ht">🔥 Heißwachs-Basis</span><span><b>${fmtKm(st.sinceHot)}</b>/${fmtKm(cfg.hotInterval)} km</span></div>
+      <div class="hbar"><div class="hbar-fill" style="width:${Math.round(Math.min(st.sinceHot/cfg.hotInterval,1)*100)}%;background:${hotColor}"></div></div>
+    </div>
+    <div class="chain-meta">
+      Gesamt <b>${fmtKm(st.total)} km</b><br>
+      🔥 <b>${fmtDate(st.lastHot)}</b> &nbsp;·&nbsp; 💧 <b>${fmtDate(st.lastTop)}</b>
+    </div>
+    <div class="chain-actions">
+      <div class="arow">
+        <button class="wax-hot" onclick="openWax('${which}','hot')">🔥 Heißwachs</button>
+        <button class="wax-drip" onclick="openWax('${which}','drip')">💧 Flüssig</button>
+      </div>
+      <button class="mount-btn ${isMounted ? 'active' : ''}" ${isMounted ? 'disabled' : `onclick="mountChain('${which}')"`}>
+        ${isMounted ? '● Aktiv montiert' : '↑ Diese Kette montieren'}
+      </button>
+    </div>
+  </div>`;
+}
+
+function render() {
+  const { s, mounted } = compute();
+  const cfg = data.settings;
+
+  document.getElementById('chains').innerHTML = chainCard('A', s.A, mounted) + chainCard('B', s.B, mounted);
+
+  // Banner für montierte Kette
+  const banner = document.getElementById('banner');
+  const mSt = s[mounted];
+  const status = chainStatus(mSt);
+  const mName = mounted === 'A' ? cfg.nameA : cfg.nameB;
+  const otherName = mounted === 'A' ? cfg.nameB : cfg.nameA;
+  if (status.hot === 'due') {
+    banner.className = 'banner show due';
+    banner.innerHTML = `<span class="b-ico">🔥</span><div><b>${mName}</b> braucht Heißwachs — komplett neu wachsen (oder auf ${otherName} wechseln).</div>`;
+  } else if (status.top === 'due') {
+    banner.className = 'banner show due';
+    banner.innerHTML = `<span class="b-ico">💧</span><div><b>${mName}</b> nachwachsen — Flüssigwachs auftragen.</div>`;
+  } else if (status.hot === 'soon') {
+    banner.className = 'banner show soon';
+    banner.innerHTML = `<span class="b-ico">🔥</span><div><b>${mName}</b>: noch ${fmtKm(cfg.hotInterval - mSt.sinceHot)} km bis zum Heißwachs.</div>`;
+  } else if (status.top === 'soon') {
+    banner.className = 'banner show soon';
+    banner.innerHTML = `<span class="b-ico">💧</span><div><b>${mName}</b>: noch ${fmtKm(cfg.topInterval - mSt.sinceTop)} km bis zum Nachwachsen.</div>`;
+  } else {
+    banner.className = 'banner';
+  }
+
+  // Strip
+  const totalKm = s.A.ridden + s.B.ridden;
+  const rides = data.log.filter(e => e.type === 'ride').length;
+  document.getElementById('strip').innerHTML = `
+    <div class="stat"><div class="label">Gesamtkilometer</div><div class="value">${fmtKm(totalKm)} <small>km</small></div></div>
+    <div class="stat"><div class="label">Fahrten erfasst</div><div class="value">${rides}</div></div>`;
+
+  document.getElementById('addTarget').innerHTML = `Fahrt wird gezählt auf: <b>${mName}</b> (montiert)`;
+
+  // Verlauf – monatsweise gruppiert, einklappbar
+  const list = document.getElementById('histList');
+  const entries = ordered().reverse();
+  if (!entries.length) {
+    list.innerHTML = '<div class="empty">Noch keine Einträge.<br>Trag deine erste Fahrt ein 👆</div>';
+  } else {
+    const groups = new Map();
+    for (const e of entries) {
+      const key = e.date.slice(0,7); // YYYY-MM
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(e);
+    }
+    let html = '', first = true;
+    for (const [key, items] of groups) {
+      const rides = items.filter(x => x.type === 'ride');
+      const km = rides.reduce((s,x) => s + x.km, 0);
+      const sum = `${rides.length} ${rides.length === 1 ? 'Fahrt' : 'Fahrten'}${km ? ` · ${fmtKm(km)} km` : ''}`;
+      html += `<details class="month"${first ? ' open' : ''}>
+        <summary><span class="chev">▸</span><span class="mlabel">${monthLabel(key)}</span><span class="msum">${sum}</span></summary>
+        <ul class="hist-list month-items">${items.map(itemHTML).join('')}</ul>
+      </details>`;
+      first = false;
+    }
+    list.innerHTML = html;
+  }
+}
+
+function monthLabel(key) {
+  const [y,m] = key.split('-');
+  const names = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+  return `${names[+m-1]} ${y}`;
+}
+
+function itemHTML(e) {
+  const cfg = data.settings;
+  const nm = escapeHtml(e.chain === 'A' ? cfg.nameA : cfg.nameB);
+  let iconCls, ico, title, sub;
+  if (e.type === 'ride') { iconCls='ride'; ico='🚴'; title=`${fmtKm(e.km)} km gefahren`; sub='Fahrt'; }
+  else if (e.type === 'wax' && e.waxType === 'hot')  { iconCls='hot';  ico='🔥'; title=`${nm}: Heißwachs`; sub='Heißwachs'; }
+  else if (e.type === 'wax')  { iconCls='drip'; ico='💧'; title=`${nm}: Flüssigwachs`; sub='Nachgewachst'; }
+  else { iconCls='swap'; ico='🔄'; title=`${nm} montiert`; sub='Wechsel'; }
+  const noteHtml = e.note ? `<div class="hist-note">📝 ${escapeHtml(e.note)}</div>` : '';
+  return `<li class="hist-item">
+    <div class="hist-ico ${iconCls}">${ico}</div>
+    <div class="hist-main clickable" onclick="openEdit(${e.id})">
+      <div class="hist-title">${title}</div>
+      <div class="hist-sub">${sub} · ${fmtDate(e.date)}</div>
+      ${noteHtml}
+    </div>
+    <div class="hist-actions">
+      <button class="hist-edit" onclick="openEdit(${e.id})" aria-label="Bearbeiten">✎</button>
+      <button class="hist-del" onclick="if(confirm('Eintrag löschen?'))deleteEvent(${e.id})" aria-label="Löschen">✕</button>
+    </div>
+  </li>`;
+}
+
+document.getElementById('rideDate').value = today();
+document.getElementById('rideKm').addEventListener('keydown', e => { if (e.key === 'Enter') addRide(); });
+render();
+</script>
+</body>
+</html>
