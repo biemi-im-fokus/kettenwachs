@@ -593,16 +593,51 @@ function exportData() {
   document.body.appendChild(a); a.click(); a.remove();
   URL.revokeObjectURL(url);
 }
+/* Importierte Daten streng validieren: nur wohlgeformte Einträge übernehmen,
+   schützt vor manipulierten/kaputten Backup-Dateien (Datenintegrität + XSS über Datums-/Settings-Felder). */
+function sanitizeImport(parsed) {
+  if (!parsed || typeof parsed !== 'object' || !Array.isArray(parsed.log)) {
+    throw new Error('keine gültige Kettenwachs-Datei');
+  }
+  const ps = parsed.settings && typeof parsed.settings === 'object' ? parsed.settings : {};
+  const s = {};
+  if (typeof ps.nameA === 'string') s.nameA = ps.nameA.slice(0, 40);
+  if (typeof ps.nameB === 'string') s.nameB = ps.nameB.slice(0, 40);
+  ['hotInterval','topInterval','interval','startA','startB'].forEach(k => {
+    const v = Number(ps[k]);
+    if (Number.isFinite(v) && v >= 0) s[k] = v;
+  });
+  const dateOk = d => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d);
+  const chainOk = c => c === 'A' || c === 'B';
+  const log = [];
+  for (const e of parsed.log) {
+    if (!e || typeof e !== 'object' || !dateOk(e.date)) continue;
+    const id = Number.isFinite(e.id) ? e.id : newId();
+    const note = typeof e.note === 'string' && e.note.trim() ? e.note.slice(0, 200) : undefined;
+    if (e.type === 'ride') {
+      const km = Number(e.km);
+      if (!(km > 0)) continue;
+      log.push(note ? { id, type:'ride', date:e.date, km, note } : { id, type:'ride', date:e.date, km });
+    } else if (e.type === 'wax' && chainOk(e.chain)) {
+      const o = { id, type:'wax', date:e.date, chain:e.chain };
+      if (e.waxType === 'drip' || e.waxType === 'hot') o.waxType = e.waxType; // sonst setzt migrate() 'hot'
+      if (note) o.note = note;
+      log.push(o);
+    } else if (e.type === 'swap' && chainOk(e.chain)) {
+      log.push(note ? { id, type:'swap', date:e.date, chain:e.chain, note } : { id, type:'swap', date:e.date, chain:e.chain });
+    }
+  }
+  return { settings: s, log };
+}
 function importData(file) {
   if (!file) return;
   const reader = new FileReader();
   reader.onload = () => {
     try {
-      const parsed = JSON.parse(reader.result);
-      if (!parsed || !Array.isArray(parsed.log)) throw new Error('keine gültige Kettenwachs-Datei');
-      const rides = parsed.log.filter(e => e.type === 'ride').length;
-      if (!confirm(`Backup mit ${parsed.log.length} Einträgen (${rides} Fahrten) importieren?\n\nDeine aktuellen Daten werden dabei ersetzt.`)) return;
-      data = migrate(parsed);
+      const clean = sanitizeImport(JSON.parse(reader.result));
+      const rides = clean.log.filter(e => e.type === 'ride').length;
+      if (!confirm(`Backup mit ${clean.log.length} gültigen Einträgen (${rides} Fahrten) importieren?\n\nDeine aktuellen Daten werden dabei ersetzt.`)) return;
+      data = migrate(clean);
       save(); render(); closeSettings();
       alert('Import erfolgreich.');
     } catch (err) {
@@ -627,7 +662,7 @@ function gaugeSVG(value, interval, color) {
 
 function chainCard(which, st, mounted) {
   const cfg = data.settings;
-  const name = which === 'A' ? cfg.nameA : cfg.nameB;
+  const name = escapeHtml(which === 'A' ? cfg.nameA : cfg.nameB);
   const isMounted = mounted === which;
   const status = chainStatus(st);
   const ringColor = lvlColor(status.top);   // Ring = Auffrischung (Flüssig)
@@ -676,8 +711,8 @@ function render() {
   const banner = document.getElementById('banner');
   const mSt = s[mounted];
   const status = chainStatus(mSt);
-  const mName = mounted === 'A' ? cfg.nameA : cfg.nameB;
-  const otherName = mounted === 'A' ? cfg.nameB : cfg.nameA;
+  const mName = escapeHtml(mounted === 'A' ? cfg.nameA : cfg.nameB);
+  const otherName = escapeHtml(mounted === 'A' ? cfg.nameB : cfg.nameA);
   if (status.hot === 'due') {
     banner.className = 'banner show due';
     banner.innerHTML = `<span class="b-ico">🔥</span><div><b>${mName}</b> braucht Heißwachs — komplett neu wachsen (oder auf ${otherName} wechseln).</div>`;
